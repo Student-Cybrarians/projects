@@ -1,10 +1,15 @@
 from __future__ import annotations
+
 import json
 import logging
 from typing import Any
+
 from mcp.server.fastmcp import FastMCP
+
+from .catalog import public_catalog
 from .config import get_settings
 from .providers import ProviderError, ProviderRegistry
+from .router import ApiRouterError, request_labeled
 
 settings = get_settings()
 logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO), format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -46,6 +51,22 @@ async def list_models(provider: str) -> str:
 def provider_status() -> str:
     """Return safe provider configuration status."""
     return dump([{"provider": i.name, "configured": i.key_count > 0, "key_count": i.key_count, "kind": i.kind} for i in registry.infos()])
+
+
+@mcp.tool()
+def list_api_catalog() -> str:
+    """List all labeled APIs without exposing credentials."""
+    return dump(public_catalog())
+
+
+@mcp.tool()
+async def labeled_api(api_id: str, method: str = "GET", path: str = "/", headers: dict[str, str] | None = None, params: dict[str, str] | None = None, body: Any = None) -> str:
+    """Call an enabled API adapter by stable catalog label."""
+    try:
+        return dump(await request_labeled(api_id, method=method, path=path, headers=headers, params=params, json_body=body))
+    except ApiRouterError as exc:
+        logger.warning("Labeled API request failed: %s", exc)
+        raise
 
 
 def main() -> None:
