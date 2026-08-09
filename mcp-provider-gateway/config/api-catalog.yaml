@@ -1,0 +1,122 @@
+version: 1
+catalog:
+  - id: GOOGLE_OAUTH_2_0
+    label: Google OAuth 2.0
+    category: identity
+    transport: https
+    enabled: false
+  - id: GOOGLE_IDENTITY_SERVICES
+    label: Google Identity Services
+    category: identity
+    transport: https
+    enabled: false
+  - id: SUPABASE_POSTGRESQL
+    label: Supabase PostgreSQL
+    category: database
+    transport: https
+    enabled: false
+  - id: SUPABASE_STORAGE_API
+    label: Supabase Storage
+    category: storage
+    transport: https
+    enabled: false
+  - id: REDIS_API
+    label: Redis API
+    category: cache
+    transport: https
+    enabled: false
+  - id: NVIDIA_NIM_API
+    label: NVIDIA NIM
+    category: ai-inference
+    transport: https
+    enabled: false
+  - id: DEEPSEEK_API
+    label: DeepSeek
+    category: ai-inference
+    transport: https
+    enabled: false
+  - id: QWEN_API
+    label: Qwen
+    category: ai-inference
+    transport: https
+    enabled: false
+  - id: BGE_M3_API
+    label: BGE-M3 Embeddings
+    category: embeddings
+    transport: https
+    enabled: false
+  - id: NVIDIA_RERANK_API
+    label: NVIDIA Rerank
+    category: reranking
+    transport: https
+    enabled: false
+  - id: NV_EMBEDCODE_API
+    label: NVIDIA EmbedCode
+    category: embeddings
+    transport: https
+    enabled: false
+  - id: GLINER_PII_API
+    label: GLiNER PII Detection
+    category: pii-detection
+    transport: https
+    enabled: false
+  - id: WHISPER_API
+    label: Whisper Speech-to-Text
+    category: speech-to-text
+    transport: https
+    enabled: false
+  - id: NVIDIA_ACTIVE_SPEAKER_API
+    label: NVIDIA Active Speaker
+    category: audio-video
+    transport: https
+    enabled: false
+  - id: NEMOTRON_VOICECHAT_API
+    label: Nemotron Voice Chat
+    category: voice-ai
+    transport: https
+    enabled: false
+  - id: WEBSOCKET_API
+    label: WebSocket API
+    category: realtime
+    transport: websocket
+    enabled: false
+  - id: WEBRTC_API
+    label: WebRTC API
+    category: realtime-media
+    transport: webrtc
+    enabled: false
+  - id: GITHUB_API
+    label: GitHub API
+    category: developer-tools
+    transport: https
+    enabled: false
+  - id: STRIPE_API
+    label: Stripe API
+    category: payments
+    transport: https
+    enabled: false
+  - id: GOOGLE_CALENDAR_API
+    label: Google Calendar API
+    category: productivity
+    transport: https
+    enabled: false
+  - id: SENDGRID_API
+    label: SendGrid API
+    category: messaging
+    transport: https
+    enabled: false
+  - id: AWS_S3_API
+    label: AWS S3 API
+    category: storage
+    transport: https
+    enabled: false
+  - id: GITHUB_ACTIONS_API
+    label: GitHub Actions API
+    category: ci-cd
+    transport: https
+    enabled: false
+  - id: SENTRY_API
+    label: Sentry API
+    category: observability
+    transport: https
+    enabled: false
