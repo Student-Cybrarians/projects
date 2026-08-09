@@ -1,12 +1,16 @@
 from __future__ import annotations
+
 import secrets
 from typing import Callable
+
 import uvicorn
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+
+from .api import app as labeled_api_app
 from .config import get_settings
 from .server import mcp
 
@@ -31,6 +35,7 @@ async def health(_: Request) -> JSONResponse:
 
 app = Starlette(middleware=[Middleware(BearerAuthMiddleware)])
 app.mount("/mcp", mcp.streamable_http_app())
+app.mount("/api", labeled_api_app)
 app.add_route("/health", health, methods=["GET"])
 
 
