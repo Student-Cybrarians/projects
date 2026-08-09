@@ -1,0 +1,32 @@
+[project]
+name = "mcp-provider-gateway"
+version = "0.1.0"
+description = "Multi-provider MCP gateway with configurable authorized API-key pools"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mcp[cli]>=2.0.0,<3",
+  "httpx>=0.27,<1",
+  "pydantic-settings>=2.5,<3",
+  "python-dotenv>=1,<2",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+  "pytest-asyncio>=0.24,<1",
+  "ruff>=0.8,<1",
+]
+
+[project.scripts]
+mcp-provider-gateway = "app.server:main"
+mcp-provider-gateway-http = "app.http:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
