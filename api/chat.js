@@ -1,5 +1,5 @@
 const MODEL = process.env.NVIDIA_MODEL || 'nvidia/nemotron-nano-12b-v2-vl';
-const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+const NVIDIA_URL = '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';
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://student-cybrarians.github.io');
