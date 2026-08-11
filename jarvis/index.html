@@ -1,32 +1,58 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JARVIS — Personal AI Interface</title>
-  <meta name="description" content="A cinematic JARVIS-inspired AI command center." />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111a">
+  <title>JARVIS — Live AI Assistant</title>
+  <meta name="description" content="Live JARVIS AI assistant with voice, chat, memory, tasks and system controls.">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <!-- existing JARVIS interface -->
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">J</span><div><strong>JARVIS</strong><small>PERSONAL AI</small></div></div>
-      <nav><button class="nav-item active" data-view="command"><span>◈</span> Command Center</button><button class="nav-item" data-view="memory"><span>⌁</span> Memory</button><button class="nav-item" data-view="systems"><span>◉</span> Systems</button><button class="nav-item" data-view="tasks"><span>✓</span> Tasks</button></nav>
-      <div class="sidebar-footer"><div class="status-dot"></div><div><strong>All systems nominal</strong><small>Latency 42ms</small></div></div>
+  <div class="app">
+    <aside class="rail">
+      <div class="logo"><span>J</span><div><b>JARVIS</b><small>LIVE AI</small></div></div>
+      <button class="nav active" data-page="home">⌂<span>Home</span></button>
+      <button class="nav" data-page="chat">◌<span>Chat</span></button>
+      <button class="nav" data-page="memory">◇<span>Memory</span></button>
+      <button class="nav" data-page="tasks">✓<span>Tasks</span></button>
+      <button class="nav" data-page="system">◉<span>System</span></button>
+      <div class="rail-bottom"><span class="dot"></span><small>ONLINE UI</small></div>
     </aside>
-    <main class="main">
-      <header class="topbar"><div><span class="eyebrow">TUESDAY · 11 AUG 2026</span><h1 id="viewTitle">Good evening, Cybrarian.</h1></div><div class="top-actions"><button class="icon-btn" title="Notifications">⌁</button><button class="avatar">C</button></div></header>
-      <section id="commandView" class="view active-view">
-        <div class="hero-grid">
-          <section class="orb-panel panel"><div class="panel-label"><span>JARVIS CORE</span><span class="live"><i></i> LIVE</span></div><div class="orb-wrap"><div class="orb-halo"></div><div class="orb"><div class="orb-core"></div><div class="orb-ring r1"></div><div class="orb-ring r2"></div></div></div><div class="voice-state" id="voiceState">Listening for your command</div><button class="talk-btn" id="talkBtn"><span class="mic">◉</span><span>Activate JARVIS</span><kbd>SPACE</kbd></button></section>
-          <section class="chat-panel panel"><div class="panel-label"><span>CONVERSATION</span><button class="clear" id="clearChat">CLEAR</button></div><div class="messages" id="messages"><div class="message jarvis"><div class="message-head"><span class="mini-orb">J</span><strong>JARVIS</strong><time>NOW</time></div><p>Good evening. Systems are online and ready. What would you like me to handle?</p></div><div class="suggestions"><button data-command="Give me a system briefing">System briefing</button><button data-command="What should I focus on next?">Next priority</button><button data-command="Run a diagnostics check">Diagnostics</button></div></div><form class="composer" id="composer"><input id="prompt" autocomplete="off" placeholder="Ask JARVIS anything…" /><button aria-label="Send">↗</button></form></section>
+
+    <main>
+      <header class="header">
+        <div><span class="kicker">PERSONAL AI / NEMOTRON</span><h1 id="pageTitle">Command Deck</h1></div>
+        <div class="header-right"><span id="backendBadge" class="badge warn">BACKEND CHECKING</span><button id="healthBtn" class="ghost">Test backend</button></div>
+      </header>
+
+      <section class="page active" id="homePage">
+        <div class="hero">
+          <section class="core card">
+            <div class="card-top"><span>JARVIS CORE</span><span id="coreState" class="live"><i></i> READY</span></div>
+            <div class="reactor"><div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="core-letter">J</div></div>
+            <h2>Talk naturally.</h2><p class="sub">Use your microphone or type below. JARVIS will answer with Nemotron and speak responses aloud.</p>
+            <div class="core-actions"><button id="talkBtn" class="primary">🎙 <span>Start listening</span><kbd>SPACE</kbd></button><button id="stopBtn" class="secondary">Stop</button></div>
+            <div id="voiceStatus" class="voice-status">Microphone idle</div>
+          </section>
+
+          <section class="chat card">
+            <div class="card-top"><span>LIVE CONVERSATION</span><button id="clearBtn" class="link">CLEAR</button></div>
+            <div id="messages" class="messages"></div>
+            <div class="quick"><button data-command="Give me a system briefing">System briefing</button><button data-command="What can you do?">Capabilities</button><button data-command="Run a diagnostics check">Diagnostics</button></div>
+            <form id="composer" class="composer"><input id="prompt" autocomplete="off" placeholder="Talk to JARVIS…"><button>➜</button></form>
+          </section>
         </div>
-        <div class="dashboard-grid"><section class="panel telemetry"><div class="panel-label"><span>LIVE TELEMETRY</span><span>LOCAL</span></div><div class="metrics"><div><small>CPU</small><strong id="cpu">24%</strong><span class="meter"><i style="width:24%"></i></span></div><div><small>MEMORY</small><strong>6.8 GB</strong><span class="meter"><i style="width:43%"></i></span></div><div><small>NETWORK</small><strong>42 ms</strong><span class="meter"><i style="width:18%"></i></span></div></div></section><section class="panel activity"><div class="panel-label"><span>RECENT ACTIVITY</span><button class="clear">VIEW ALL</button></div><div class="activity-list"><div><b>◉</b><span>Threat intelligence scan completed<small>2 minutes ago</small></span><em>SECURE</em></div><div><b>↗</b><span>Research workspace synchronized<small>18 minutes ago</small></span><em>SYNCED</em></div><div><b>✓</b><span>Morning task queue cleared<small>1 hour ago</small></span><em>DONE</em></div></div></section></div>
+        <div class="stats"><div class="card stat"><small>AI MODEL</small><b id="modelName">Nemotron Nano 12B V2 VL</b><span>Server-side</span></div><div class="card stat"><small>CONNECTION</small><b id="latency">—</b><span>Backend latency</span></div><div class="card stat"><small>VOICE</small><b id="voiceMode">Browser TTS</b><span>Speech synthesis</span></div><div class="card stat"><small>SESSION</small><b id="messageCount">0</b><span>Messages</span></div></div>
       </section>
-      <section id="memoryView" class="view"><div class="section-intro"><span class="eyebrow">MEMORY VAULT</span><h2>Context, organized.</h2><p>JARVIS keeps useful context close without cluttering your command surface.</p></div></section>
-      <section id="systemsView" class="view"><div class="section-intro"><span class="eyebrow">SYSTEMS</span><h2>Everything is green.</h2><p>Monitor the components behind your personal AI workspace.</p></div></section>
-      <section id="tasksView" class="view"><div class="section-intro"><span class="eyebrow">TASK QUEUE</span><h2>Command your day.</h2><p>Fast access to the actions JARVIS can orchestrate.</p></div></section>
+
+      <section class="page" id="chatPage"><div class="page-head"><span class="kicker">CHAT</span><h2>Conversation workspace</h2><p>Full-screen chat with the same live backend and voice controls.</p></div><div class="chat-full card"><div id="messagesFull" class="messages"></div><form id="composerFull" class="composer"><input id="promptFull" autocomplete="off" placeholder="Ask anything…"><button>➜</button></form></div></section>
+
+      <section class="page" id="memoryPage"><div class="page-head"><span class="kicker">MEMORY</span><h2>Session memory</h2><p>Recent conversation context is retained in this browser session and sent to the AI backend.</p></div><div class="memory-grid"><div class="card memory-card"><b>Context window</b><strong id="memoryCount">0</strong><span>messages available</span></div><div class="card memory-card"><b>Storage</b><strong>SESSION</strong><span>cleared when you use Clear</span></div></div></section>
+
+      <section class="page" id="tasksPage"><div class="page-head"><span class="kicker">TASKS</span><h2>Local command board</h2><p>These controls run in the browser. External actions are never claimed unless actually connected.</p></div><div class="task-grid"><div class="card task"><b>System briefing</b><span>Run a local status summary.</span><button data-command="Give me a system briefing">Run</button></div><div class="card task"><b>Diagnostics</b><span>Check the browser assistant stack.</span><button data-command="Run a diagnostics check">Run</button></div><div class="card task"><b>Music search</b><span>Open a YouTube search for a query.</span><button id="musicBtn">Open</button></div></div></section>
+
+      <section class="page" id="systemPage"><div class="page-head"><span class="kicker">SYSTEM</span><h2>Connection diagnostics</h2><p>Verify the JARVIS backend without exposing your NVIDIA secret.</p></div><div class="system-grid"><div class="card system-row"><span class="icon">◉</span><div><b>JARVIS API</b><small id="apiUrl">Configured endpoint</small></div><strong id="apiState">CHECKING</strong></div><div class="card system-row"><span class="icon">🎙</span><div><b>Microphone</b><small id="micState">Browser permission required on first use</small></div><strong id="micStateBadge">READY</strong></div><div class="card system-row"><span class="icon">🔊</span><div><b>Speech output</b><small>Web Speech Synthesis</small></div><strong>READY</strong></div></div></section>
     </main>
   </div>
   <script src="./config.js"></script>
