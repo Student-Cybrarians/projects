@@ -1,7 +1,15 @@
 const MODEL = process.env.NVIDIA_MODEL || 'nvidia/nemotron-nano-12b-v2-vl';
 const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
+function cors(res) {
+  res.setHeader('Access-Control-Allow-Origin', 'https://student-cybrarians.github.io');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 export default async function handler(req, res) {
+  cors(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.NVIDIA_API_KEY) return res.status(503).json({ error: 'NVIDIA_API_KEY is not configured on the server.' });
 
@@ -12,7 +20,7 @@ export default async function handler(req, res) {
     const upstream = await fetch(NVIDIA_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+        Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
