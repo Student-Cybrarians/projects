@@ -1,0 +1,53 @@
+name: Build and publish OpenJarvis
+
+on:
+  push:
+    branches: [master-branch]
+    paths:
+      - 'OpenJarvis'
+      - '.gitmodules'
+      - '.github/workflows/openjarvis-container.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: openjarvis-container
+  cancel-in-progress: true
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with OpenJarvis submodule
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/openjarvis
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build and publish OpenJarvis
+        uses: docker/build-push-action@v6
+        with:
+          context: ./OpenJarvis
+          file: ./OpenJarvis/deploy/docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
