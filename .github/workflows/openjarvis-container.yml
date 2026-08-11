@@ -1,3 +1,4 @@
+# Builds the pinned OpenJarvis submodule and publishes the server image to GHCR.
 name: Build and publish OpenJarvis
 
 on:
