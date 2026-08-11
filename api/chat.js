@@ -14,10 +14,7 @@ function corsHeaders() {
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      ...corsHeaders(),
-      'Content-Type': 'application/json; charset=utf-8',
-    },
+    headers: { ...corsHeaders(), 'Content-Type': 'application/json; charset=utf-8' },
   });
 }
 
@@ -36,18 +33,30 @@ export async function GET() {
 
 export async function POST(request) {
   if (!process.env.NVIDIA_API_KEY) {
-    return json({
-      error: 'NVIDIA_API_KEY is not configured on the server.',
-    }, 503);
+    return json({ error: 'NVIDIA_API_KEY is not configured on the server.' }, 503);
   }
 
   try {
     const body = await request.json();
     const message = typeof body?.message === 'string' ? body.message.trim() : '';
+    const history = Array.isArray(body?.messages) ? body.messages : [];
 
-    if (!message) {
-      return json({ error: 'message is required' }, 400);
-    }
+    if (!message) return json({ error: 'message is required' }, 400);
+
+    const safeHistory = history
+      .filter(item => item && ['user', 'assistant'].includes(item.role) && typeof item.content === 'string')
+      .slice(-12)
+      .map(item => ({ role: item.role, content: item.content.slice(0, 8000) }));
+
+    const messages = [
+      {
+        role: 'system',
+        content:
+          'You are JARVIS, a concise, capable personal AI assistant. Speak naturally, warmly, and confidently. Keep normal answers short enough to be spoken aloud. Never claim that an external action happened unless a connected tool actually performed it. If the user asks to play music but no music tool is connected, explain that you can help choose music but cannot directly control playback yet.',
+      },
+      ...safeHistory,
+      { role: 'user', content: message },
+    ];
 
     const upstream = await fetch(NVIDIA_URL, {
       method: 'POST',
@@ -58,14 +67,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         model: MODEL,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are JARVIS, a concise, capable personal AI assistant. Speak naturally, warmly, and confidently. Keep normal answers short enough to be spoken aloud. Never claim that an external action happened unless a connected tool actually performed it. If the user asks to play music but no music tool is connected, explain that you can help choose music but cannot start playback yet.',
-          },
-          { role: 'user', content: message },
-        ],
+        messages,
         temperature: 0.6,
         max_tokens: 700,
         stream: false,
@@ -76,22 +78,15 @@ export async function POST(request) {
 
     if (!upstream.ok) {
       console.error('NVIDIA error', upstream.status, data);
-      return json({
-        error: data?.error?.message || `NVIDIA API request failed (${upstream.status})`,
-      }, upstream.status);
+      return json({ error: data?.error?.message || `NVIDIA API request failed (${upstream.status})` }, upstream.status);
     }
 
     const reply = data?.choices?.[0]?.message?.content?.trim();
-
-    if (!reply) {
-      return json({ error: 'NVIDIA returned no assistant message' }, 502);
-    }
+    if (!reply) return json({ error: 'NVIDIA returned no assistant message' }, 502);
 
     return json({ reply, model: MODEL });
   } catch (error) {
     console.error('JARVIS backend error', error);
-    return json({
-      error: error instanceof Error ? error.message : 'JARVIS backend error',
-    }, 500);
+    return json({ error: error instanceof Error ? error.message : 'JARVIS backend error' }, 500);
   }
 }
