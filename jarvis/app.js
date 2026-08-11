@@ -37,6 +37,8 @@ function speak(text) {
 
 function localCommand(text) {
   const t = text.toLowerCase().trim();
+  if (/^(hello|hi|hey)( jarvis)?[!. ]*$/.test(t)) return 'Hello! I am doing well and ready to help. My browser interface is online, although the remote AI backend is currently unavailable.';
+  if (t === 'how are you?' || t === 'how are you') return 'I am operational and ready to help. The JARVIS interface is working; the remote AI backend needs to be restored before full AI conversation will work.';
   if (t === 'what can you do?') return 'I can hold a live conversation, remember the current session context, answer questions through Nemotron, speak responses aloud, run local diagnostics, and open music searches. External actions are only reported when a real tool performs them.';
   if (t === 'give me a system briefing') return 'JARVIS interface is operational. Voice input and speech output are available in this browser. The AI backend is checked separately so I never pretend a disconnected service is online.';
   if (t === 'run a diagnostics check') return `Browser diagnostics complete. API endpoint: ${API_URL ? 'configured' : 'missing'}. Speech synthesis: ${'speechSynthesis' in window ? 'available' : 'unavailable'}. Speech recognition: ${window.SpeechRecognition || window.webkitSpeechRecognition ? 'available' : 'unavailable'}.`;
@@ -95,6 +97,11 @@ async function askBackend(text) {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(data.error || `Backend HTTP ${r.status}`);
     return data.reply || data.message || data.output || data.choices?.[0]?.message?.content || '';
+  } catch (e) {
+    if (e instanceof TypeError && e.message === 'Failed to fetch') {
+      throw new Error('AI backend is unreachable. The configured Vercel endpoint is not responding or is no longer deployed.');
+    }
+    throw e;
   } finally { clearTimeout(timer); }
 }
 
