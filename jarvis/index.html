@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS — Personal AI Interface</title>
+  <meta name="description" content="A cinematic JARVIS-inspired AI command center." />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">J</span><div><strong>JARVIS</strong><small>PERSONAL AI</small></div></div>
+      <nav>
+        <button class="nav-item active" data-view="command"><span>◈</span> Command Center</button>
+        <button class="nav-item" data-view="memory"><span>⌁</span> Memory</button>
+        <button class="nav-item" data-view="systems"><span>◉</span> Systems</button>
+        <button class="nav-item" data-view="tasks"><span>✓</span> Tasks</button>
+      </nav>
+      <div class="sidebar-footer"><div class="status-dot"></div><div><strong>All systems nominal</strong><small>Latency 42ms</small></div></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><span class="eyebrow">TUESDAY · 11 AUG 2026</span><h1 id="viewTitle">Good evening, Cybrarian.</h1></div>
+        <div class="top-actions"><button class="icon-btn" title="Notifications">⌁</button><button class="avatar">C</button></div>
+      </header>
+
+      <section id="commandView" class="view active-view">
+        <div class="hero-grid">
+          <section class="orb-panel panel">
+            <div class="panel-label"><span>JARVIS CORE</span><span class="live"><i></i> LIVE</span></div>
+            <div class="orb-wrap"><div class="orb-halo"></div><div class="orb"><div class="orb-core"></div><div class="orb-ring r1"></div><div class="orb-ring r2"></div></div></div>
+            <div class="voice-state" id="voiceState">Listening for your command</div>
+            <button class="talk-btn" id="talkBtn"><span class="mic">◉</span><span>Activate JARVIS</span><kbd>SPACE</kbd></button>
+          </section>
+
+          <section class="chat-panel panel">
+            <div class="panel-label"><span>CONVERSATION</span><button class="clear" id="clearChat">CLEAR</button></div>
+            <div class="messages" id="messages">
+              <div class="message jarvis"><div class="message-head"><span class="mini-orb">J</span><strong>JARVIS</strong><time>NOW</time></div><p>Good evening. Systems are online and ready. What would you like me to handle?</p></div>
+              <div class="suggestions"><button data-command="Give me a system briefing">System briefing</button><button data-command="What should I focus on next?">Next priority</button><button data-command="Run a diagnostics check">Diagnostics</button></div>
+            </div>
+            <form class="composer" id="composer"><input id="prompt" autocomplete="off" placeholder="Ask JARVIS anything…" /><button aria-label="Send">↗</button></form>
+          </section>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel telemetry"><div class="panel-label"><span>LIVE TELEMETRY</span><span>LOCAL</span></div><div class="metrics"><div><small>CPU</small><strong id="cpu">24%</strong><span class="meter"><i style="width:24%"></i></span></div><div><small>MEMORY</small><strong>6.8 GB</strong><span class="meter"><i style="width:43%"></i></span></div><div><small>NETWORK</small><strong>42 ms</strong><span class="meter"><i style="width:18%"></i></span></div></div></section>
+          <section class="panel activity"><div class="panel-label"><span>RECENT ACTIVITY</span><button class="clear">VIEW ALL</button></div><div class="activity-list"><div><b>◉</b><span>Threat intelligence scan completed<small>2 minutes ago</small></span><em>SECURE</em></div><div><b>↗</b><span>Research workspace synchronized<small>18 minutes ago</small></span><em>SYNCED</em></div><div><b>✓</b><span>Morning task queue cleared<small>1 hour ago</small></span><em>DONE</em></div></div></section>
+        </div>
+      </section>
+
+      <section id="memoryView" class="view"><div class="section-intro"><span class="eyebrow">MEMORY VAULT</span><h2>Context, organized.</h2><p>JARVIS keeps useful context close without cluttering your command surface.</p></div><div class="cards"><article class="panel card"><span>01</span><h3>Active projects</h3><p>3 workspaces are currently in focus.</p></article><article class="panel card"><span>02</span><h3>Recent decisions</h3><p>12 decisions indexed this month.</p></article><article class="panel card"><span>03</span><h3>Preferences</h3><p>8 interaction preferences available.</p></article></div></section>
+      <section id="systemsView" class="view"><div class="section-intro"><span class="eyebrow">SYSTEMS</span><h2>Everything is green.</h2><p>Monitor the components behind your personal AI workspace.</p></div><div class="system-list panel"><div><span class="system-icon">◈</span><b>Reasoning engine</b><span class="ok">OPERATIONAL</span></div><div><span class="system-icon">⌁</span><b>Voice interface</b><span class="ok">OPERATIONAL</span></div><div><span class="system-icon">◉</span><b>Memory index</b><span class="ok">OPERATIONAL</span></div><div><span class="system-icon">↯</span><b>Automation bridge</b><span class="ok">STANDBY</span></div></div></section>
+      <section id="tasksView" class="view"><div class="section-intro"><span class="eyebrow">TASK QUEUE</span><h2>Command your day.</h2><p>Fast access to the actions JARVIS can orchestrate.</p></div><div class="task-list panel"><div class="task done"><span>✓</span><div><b>Review security alerts</b><small>Completed · 18:42</small></div></div><div class="task"><span>○</span><div><b>Prepare tomorrow's briefing</b><small>Priority · High</small></div><button>Run</button></div><div class="task"><span>○</span><div><b>Summarize research notes</b><small>Priority · Medium</small></div><button>Run</button></div></div></section>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
