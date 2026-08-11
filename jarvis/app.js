@@ -1,168 +1,171 @@
-const views = { command: 'Command Center', memory: 'Memory', systems: 'Systems', tasks: 'Tasks' };
-const nav = document.querySelectorAll('.nav-item');
-const viewEls = document.querySelectorAll('.view');
-const title = document.querySelector('#viewTitle');
-const messages = document.querySelector('#messages');
-const prompt = document.querySelector('#prompt');
-const composer = document.querySelector('#composer');
-const state = document.querySelector('#voiceState');
-const talk = document.querySelector('#talkBtn');
 const API_URL = (window.JARVIS_API_URL || '').trim();
 const conversation = [];
+let recognition = null;
+let listening = false;
 
-nav.forEach(btn => btn.addEventListener('click', () => {
-  nav.forEach(x => x.classList.remove('active'));
-  btn.classList.add('active');
-  viewEls.forEach(v => v.classList.remove('active-view'));
-  document.querySelector('#' + btn.dataset.view + 'View').classList.add('active-view');
-  title.textContent = btn.dataset.view === 'command' ? 'Good evening, Cybrarian.' : views[btn.dataset.view] + '.';
-}));
+const $ = id => document.getElementById(id);
+const messages = $('messages');
+const messagesFull = $('messagesFull');
+const prompt = $('prompt');
+const promptFull = $('promptFull');
+const voiceStatus = $('voiceStatus');
 
-function addMessage(text, type = 'jarvis') {
-  const wrap = document.createElement('div');
-  wrap.className = 'message ' + type;
-  wrap.innerHTML = type === 'jarvis'
-    ? `<div class="message-head"><span class="mini-orb">J</span><strong>JARVIS</strong><time>NOW</time></div><p></p>`
-    : `<div class="message-head"><strong>YOU</strong><time>NOW</time></div><p></p>`;
-  wrap.querySelector('p').textContent = text;
-  messages.appendChild(wrap);
-  messages.scrollTop = messages.scrollHeight;
-  return wrap;
+function now() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+function renderMessage(text, role = 'assistant') {
+  [messages, messagesFull].filter(Boolean).forEach(box => {
+    const el = document.createElement('article');
+    el.className = `msg ${role === 'user' ? 'user' : 'assistant'}`;
+    el.innerHTML = `<div class="head"><b>${role === 'user' ? 'YOU' : 'JARVIS'}</b><time>${now()}</time></div><p></p>`;
+    el.querySelector('p').textContent = text;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  });
+  $('messageCount').textContent = conversation.length;
+  $('memoryCount').textContent = conversation.length;
 }
 
 function speak(text) {
   if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
+  speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 0.96;
-  u.pitch = 0.92;
+  u.pitch = 0.9;
   u.volume = 1;
-  window.speechSynthesis.speak(u);
+  speechSynthesis.speak(u);
 }
 
-async function askBackend(value) {
+function localCommand(text) {
+  const t = text.toLowerCase().trim();
+  if (t === 'what can you do?') return 'I can hold a live conversation, remember the current session context, answer questions through Nemotron, speak responses aloud, run local diagnostics, and open music searches. External actions are only reported when a real tool performs them.';
+  if (t === 'give me a system briefing') return 'JARVIS interface is operational. Voice input and speech output are available in this browser. The AI backend is checked separately so I never pretend a disconnected service is online.';
+  if (t === 'run a diagnostics check') return `Browser diagnostics complete. API endpoint: ${API_URL ? 'configured' : 'missing'}. Speech synthesis: ${'speechSynthesis' in window ? 'available' : 'unavailable'}. Speech recognition: ${window.SpeechRecognition || window.webkitSpeechRecognition ? 'available' : 'unavailable'}.`;
+  if (t === 'play music') return 'Tell me an artist, song, or genre and I will open a music search. I cannot claim playback has started unless a playback integration is connected.';
+  const match = t.match(/^play\s+(.+)/);
+  if (match) {
+    const q = encodeURIComponent(match[1]);
+    window.open(`https://www.youtube.com/results?search_query=${q}`, '_blank', 'noopener');
+    return `I opened a music search for ${match[1]}.`;
+  }
+  return null;
+}
+
+async function backendHealth() {
   if (!API_URL) throw new Error('Backend URL is not configured');
+  const started = performance.now();
+  const r = await fetch(API_URL, { method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store' });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  $('latency').textContent = `${Math.round(performance.now() - started)} ms`;
+  $('modelName').textContent = data.model || 'Nemotron Nano 12B V2 VL';
+  return data;
+}
 
+async function checkBackend() {
+  const badge = $('backendBadge');
+  const state = $('apiState');
+  badge.textContent = 'BACKEND CHECKING'; badge.className = 'badge warn';
+  state.textContent = 'CHECKING';
+  try {
+    const data = await backendHealth();
+    const good = data.ok && data.configured;
+    badge.textContent = good ? 'BACKEND ONLINE' : 'SECRET MISSING';
+    badge.className = `badge ${good ? 'ok' : 'warn'}`;
+    state.textContent = good ? 'ONLINE' : 'NO SECRET';
+    return data;
+  } catch (e) {
+    badge.textContent = 'BACKEND OFFLINE'; badge.className = 'badge bad';
+    state.textContent = 'OFFLINE';
+    $('latency').textContent = '—';
+    return null;
+  }
+}
+
+async function askBackend(text) {
+  if (!API_URL) throw new Error('Backend URL is not configured');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
-
+  const timer = setTimeout(() => controller.abort(), 45000);
   try {
     const r = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ message: value, messages: conversation.slice(-12) }),
+      body: JSON.stringify({ message: text, messages: conversation.slice(-12) }),
       signal: controller.signal
     });
-
-    let data = {};
-    try { data = await r.json(); } catch {}
-    if (!r.ok) throw new Error(data?.error || `Backend returned HTTP ${r.status}`);
-    return data.reply || data.message || data.output || data.choices?.[0]?.message?.content;
-  } finally {
-    clearTimeout(timeout);
-  }
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || `Backend HTTP ${r.status}`);
+    return data.reply || data.message || data.output || data.choices?.[0]?.message?.content || '';
+  } finally { clearTimeout(timer); }
 }
 
-function runLocalAction(value) {
-  const text = value.toLowerCase().trim();
-
-  if (text === 'give me a system briefing') return 'All systems nominal. Core services are online, memory is synchronized, and the automation bridge is standing by.';
-  if (text === 'what should i focus on next?') return 'Your highest-leverage next move is to finish the tomorrow briefing. I can structure it around priorities, blockers, and decisions.';
-  if (text === 'run a diagnostics check') return 'Diagnostics complete. CPU, memory, network, voice interface, and memory index are operating within normal parameters.';
-  if (text === 'play music') return 'Certainly. Tell me an artist, song, playlist, or genre and I can open a music search for it.';
-
-  const play = text.match(/^play (.+)$/);
-  if (play && play[1] && !text.startsWith('play music')) {
-    const query = encodeURIComponent(play[1]);
-    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank', 'noopener');
-    return `Opening a music search for ${play[1]}.`;
-  }
-
-  return null;
-}
-
-async function send(text) {
-  const value = text.trim();
+async function send(text, source = 'typed') {
+  const value = String(text || '').trim();
   if (!value) return;
-
-  addMessage(value, 'user');
-  prompt.value = '';
-  state.textContent = 'Processing command…';
-
+  renderMessage(value, 'user');
+  prompt.value = ''; promptFull.value = '';
+  voiceStatus.textContent = source === 'voice' ? 'Thinking…' : 'Processing…';
   try {
-    const localReply = runLocalAction(value);
-    let reply = localReply;
-
+    const local = localCommand(value);
+    let reply = local;
     if (!reply) {
       conversation.push({ role: 'user', content: value });
       reply = await askBackend(value);
     }
-
-    if (!reply) throw new Error('The AI server returned an empty response');
-
+    if (!reply) throw new Error('AI server returned an empty response');
     conversation.push({ role: 'assistant', content: reply });
-    addMessage(reply);
+    renderMessage(reply);
     speak(reply);
-    state.textContent = 'Listening for your command';
-  } catch (error) {
-    console.error('JARVIS request failed:', error);
-    let message = 'JARVIS cannot reach the AI server right now.';
-    if (!API_URL) message = 'JARVIS backend URL is not configured.';
-    else if (error?.name === 'AbortError') message = 'JARVIS timed out waiting for the AI server.';
-    else if (error?.message) message = `JARVIS backend error: ${error.message}`;
-    addMessage(message);
+    voiceStatus.textContent = 'Ready — press Space or speak';
+  } catch (e) {
+    console.error(e);
+    const message = e.name === 'AbortError' ? 'JARVIS timed out waiting for the AI server.' : `JARVIS backend error: ${e.message}`;
+    renderMessage(message);
     speak(message);
-    state.textContent = 'Backend unavailable';
+    voiceStatus.textContent = 'Backend unavailable';
   }
 }
 
-composer.addEventListener('submit', e => { e.preventDefault(); send(prompt.value); });
-document.querySelectorAll('[data-command]').forEach(b => b.addEventListener('click', () => send(b.dataset.command)));
-document.querySelector('#clearChat').addEventListener('click', () => {
+function clearConversation() {
   conversation.length = 0;
-  messages.innerHTML = '<div class="message jarvis"><div class="message-head"><span class="mini-orb">J</span><strong>JARVIS</strong><time>NOW</time></div><p>Conversation cleared. Ready when you are.</p></div>';
-});
+  [messages, messagesFull].filter(Boolean).forEach(box => box.innerHTML = '');
+  renderMessage('Conversation cleared. I am ready.');
+  $('messageCount').textContent = '0'; $('memoryCount').textContent = '0';
+}
 
-let listening = false;
-let recognition = null;
 function startListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    const msg = 'Voice input is not supported by this browser. You can still type to JARVIS.';
-    addMessage(msg); speak(msg); return;
-  }
+  if (!SR) { voiceStatus.textContent = 'Speech recognition is not supported in this browser.'; return; }
+  if (listening) return;
   recognition = new SR();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.continuous = false;
-  recognition.onstart = () => {
-    listening = true;
-    talk.querySelector('span:last-of-type').textContent = 'Listening…';
-    state.textContent = 'Microphone active — speak your command';
-  };
-  recognition.onresult = e => send(e.results[0][0].transcript);
-  recognition.onerror = e => { console.error('Speech recognition error:', e); state.textContent = 'Voice input error'; };
-  recognition.onend = () => {
-    listening = false;
-    talk.querySelector('span:last-of-type').textContent = 'Activate JARVIS';
-    if (state.textContent !== 'Processing command…') state.textContent = 'Listening for your command';
-  };
+  recognition.lang = 'en-US'; recognition.interimResults = false; recognition.continuous = false;
+  recognition.onstart = () => { listening = true; voiceStatus.textContent = 'Listening — speak now'; $('talkBtn').querySelector('span').textContent = 'Listening…'; };
+  recognition.onresult = e => send(e.results[0][0].transcript, 'voice');
+  recognition.onerror = e => { console.error(e); voiceStatus.textContent = `Microphone error: ${e.error}`; };
+  recognition.onend = () => { listening = false; $('talkBtn').querySelector('span').textContent = 'Start listening'; if (!voiceStatus.textContent.includes('error')) voiceStatus.textContent = 'Microphone idle'; };
   recognition.start();
 }
 
-talk.addEventListener('click', () => {
-  if (listening) { recognition?.stop(); return; }
-  startListening();
-});
+function stopListening() { recognition?.stop(); speechSynthesis?.cancel(); listening = false; voiceStatus.textContent = 'Microphone idle'; }
 
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space' && document.activeElement !== prompt) {
-    e.preventDefault(); talk.click();
-  }
-});
+function openPage(page) {
+  document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(`${page}Page`).classList.add('active');
+  $('pageTitle').textContent = ({ home: 'Command Deck', chat: 'Conversation', memory: 'Session Memory', tasks: 'Task Board', system: 'System Diagnostics' })[page];
+}
 
-setInterval(() => {
-  const n = Math.floor(20 + Math.random() * 15);
-  const cpu = document.querySelector('#cpu');
-  if (cpu) { cpu.textContent = n + '%'; cpu.nextElementSibling.firstElementChild.style.width = n + '%'; }
-}, 3000);
+document.querySelectorAll('.nav').forEach(b => b.addEventListener('click', () => openPage(b.dataset.page)));
+document.querySelectorAll('[data-command]').forEach(b => b.addEventListener('click', () => send(b.dataset.command)));
+$('composer').addEventListener('submit', e => { e.preventDefault(); send(prompt.value); });
+$('composerFull').addEventListener('submit', e => { e.preventDefault(); send(promptFull.value); });
+$('talkBtn').addEventListener('click', startListening);
+$('stopBtn').addEventListener('click', stopListening);
+$('clearBtn').addEventListener('click', clearConversation);
+$('healthBtn').addEventListener('click', checkBackend);
+$('musicBtn').addEventListener('click', () => send('play music'));
+document.addEventListener('keydown', e => { if (e.code === 'Space' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') { e.preventDefault(); listening ? stopListening() : startListening(); } });
+
+$('apiUrl').textContent = API_URL || 'Not configured';
+$('micStateBadge').textContent = window.SpeechRecognition || window.webkitSpeechRecognition ? 'READY' : 'UNSUPPORTED';
+renderMessage('Good evening. I am JARVIS. Ask me anything, or press Start listening.');
+checkBackend();
