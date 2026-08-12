@@ -20,4 +20,7 @@ source = source.replace(
 
 fs.writeFileSync(apiFile, source);
 console.log('Patched OpenJarvis web build for NVIDIA NIM.');
-execSync('npm --prefix OpenJarvis/frontend run build', { stdio: 'inherit' });
+
+// Upstream Vite normally emits into the Python server's static directory.
+// Vercel needs a self-contained frontend output directory instead.
+execSync('npm --prefix OpenJarvis/frontend run build -- --outDir dist', { stdio: 'inherit' });
