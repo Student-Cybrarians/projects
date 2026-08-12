@@ -4,5 +4,12 @@
     "api/chat.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/v1/models", "destination": "/api/chat?route=models" },
+    { "source": "/v1/info", "destination": "/api/chat?route=info" },
+    { "source": "/v1/recommended-model", "destination": "/api/chat?route=recommended-model" },
+    { "source": "/health", "destination": "/api/chat?route=health" },
+    { "source": "/v1/chat/completions", "destination": "/api/chat?route=chat" }
+  ]
 }
