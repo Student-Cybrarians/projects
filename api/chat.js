@@ -8,34 +8,26 @@ function cors(res) {
   res.setHeader('Cache-Control', 'no-store');
 }
 
-function json(res, status, body) {
+function sendJson(res, status, body) {
   cors(res);
   return res.status(status).json(body);
 }
 
 export default async function handler(req, res) {
   cors(res);
-
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  // OpenJarvis browser compatibility routes. vercel.json rewrites these
-  // routes here so the existing frontend can use its native /v1 API shape.
   const route = req.query?.route;
+
   if (req.method === 'GET' && route === 'models') {
-    return json(res, 200, {
+    return sendJson(res, 200, {
       object: 'list',
-      data: [{
-        id: MODEL,
-        object: 'model',
-        created: Math.floor(Date.now() / 1000),
-        owned_by: 'nvidia',
-        permission: [],
-      }],
+      data: [{ id: MODEL, object: 'model', created: Math.floor(Date.now() / 1000), owned_by: 'nvidia', permission: [] }],
     });
   }
 
   if (req.method === 'GET' && route === 'info') {
-    return json(res, 200, {
+    return sendJson(res, 200, {
       engine: 'nvidia',
       model: MODEL,
       configured: Boolean(process.env.NVIDIA_API_KEY),
@@ -44,16 +36,15 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET' && route === 'recommended-model') {
-    return json(res, 200, { model: MODEL, reason: 'Configured NVIDIA model' });
+    return sendJson(res, 200, { model: MODEL, reason: 'Configured NVIDIA model' });
   }
 
   if (req.method === 'GET' && route === 'health') {
-    return json(res, 200, { ok: true, engine: 'nvidia', model: MODEL, configured: Boolean(process.env.NVIDIA_API_KEY) });
+    return sendJson(res, 200, { ok: true, engine: 'nvidia', model: MODEL, configured: Boolean(process.env.NVIDIA_API_KEY) });
   }
 
-  // Existing JARVIS health endpoint.
   if (req.method === 'GET') {
-    return json(res, 200, {
+    return sendJson(res, 200, {
       ok: true,
       service: 'JARVIS AI backend',
       model: MODEL,
@@ -61,33 +52,28 @@ export default async function handler(req, res) {
     });
   }
 
-  if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
-
-  if (!process.env.NVIDIA_API_KEY) {
-    return json(res, 503, { error: 'NVIDIA_API_KEY is not configured on the server.' });
-  }
+  if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' });
+  if (!process.env.NVIDIA_API_KEY) return sendJson(res, 503, { error: 'NVIDIA_API_KEY is not configured on the server.' });
 
   try {
     const body = req.body || {};
-    const routeMessages = Array.isArray(body.messages) ? body.messages : [];
+    const isOpenJarvis = route === 'chat';
     const legacyMessage = typeof body.message === 'string' ? body.message.trim() : '';
+    const history = Array.isArray(body.messages)
+      ? body.messages.filter(item => item && ['system', 'user', 'assistant'].includes(item.role) && typeof item.content === 'string').slice(-12)
+      : [];
 
-    const messages = route === 'chat'
-      ? routeMessages
+    const messages = isOpenJarvis
+      ? history
       : [
-          {
-            role: 'system',
-            content: 'You are JARVIS, a concise, capable personal AI assistant. Speak naturally, warmly, and confidently. Never claim an external action happened unless a connected tool actually performed it.'
-          },
-          ...(Array.isArray(body.messages)
-            ? body.messages.filter(item => item && ['user', 'assistant'].includes(item.role) && typeof item.content === 'string').slice(-12)
-            : []),
+          { role: 'system', content: 'You are JARVIS, a concise, capable personal AI assistant. Speak naturally, warmly, and confidently. Never claim an external action happened unless a connected tool actually performed it.' },
+          ...history.filter(item => item.role !== 'system'),
           ...(legacyMessage ? [{ role: 'user', content: legacyMessage }] : []),
         ];
 
-    if (!messages.length) return json(res, 400, { error: 'messages is required' });
+    if (!messages.length) return sendJson(res, 400, { error: 'messages is required' });
 
-    const stream = route === 'chat' ? body.stream !== false : false;
+    const stream = isOpenJarvis ? body.stream !== false : false;
     const payload = {
       model: MODEL,
       messages,
@@ -106,28 +92,40 @@ export default async function handler(req, res) {
       body: JSON.stringify(payload),
     });
 
-    const data = await upstream.json().catch(() => null);
-
     if (!upstream.ok) {
-      console.error('NVIDIA error', upstream.status, data);
-      return json(res, upstream.status, {
-        error: data?.error?.message || `NVIDIA API request failed (${upstream.status})`
-      });
+      const text = await upstream.text().catch(() => '');
+      let message = text;
+      try { message = JSON.parse(text)?.error?.message || message; } catch {}
+      return sendJson(res, upstream.status, { error: message || `NVIDIA API request failed (${upstream.status})` });
     }
 
-    // Non-streaming legacy JARVIS endpoint.
     if (!stream) {
+      const data = await upstream.json().catch(() => ({}));
       const reply = data?.choices?.[0]?.message?.content?.trim();
-      if (!reply) return json(res, 502, { error: 'NVIDIA returned no assistant message' });
-      return json(res, 200, { reply, model: MODEL });
+      if (!reply) return sendJson(res, 502, { error: 'NVIDIA returned no assistant message' });
+      return sendJson(res, 200, { reply, model: MODEL });
     }
 
-    // This branch is intentionally unreachable because json() above consumes
-    // the upstream body. OpenJarvis should use /nvidia-api/v1/chat/completions
-    // for streaming; the compatibility endpoint remains for model discovery.
-    return json(res, 200, data);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+
+    const reader = upstream.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(decoder.decode(value, { stream: true }));
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    return res.end();
   } catch (error) {
     console.error('JARVIS backend error', error);
-    return json(res, 500, { error: error instanceof Error ? error.message : 'JARVIS backend error' });
+    if (!res.headersSent) return sendJson(res, 500, { error: error instanceof Error ? error.message : 'JARVIS backend error' });
+    return res.end();
   }
 }
