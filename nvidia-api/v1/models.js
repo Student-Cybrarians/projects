@@ -12,13 +12,16 @@ export default function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  // OpenJarvis treats the `litellm` owner as an OpenAI-compatible cloud
+  // provider and therefore does not try to preload the model through Ollama.
+  // The actual inference provider remains NVIDIA NIM.
   return res.status(200).json({
     object: 'list',
     data: [{
       id: MODEL,
       object: 'model',
       created: Math.floor(Date.now() / 1000),
-      owned_by: 'nvidia',
+      owned_by: 'litellm',
       permission: [],
     }],
   });
