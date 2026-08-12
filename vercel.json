@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd OpenJarvis/frontend && npm ci",
-  "buildCommand": "cd OpenJarvis/frontend && npm run build",
+  "installCommand": "npm --prefix OpenJarvis/frontend ci",
+  "buildCommand": "node vercel-build.cjs",
   "outputDirectory": "OpenJarvis/frontend/dist",
   "functions": {
     "api/chat.js": {
