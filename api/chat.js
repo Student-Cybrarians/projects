@@ -22,16 +22,13 @@ export default async function handler(req, res) {
   if (req.method === 'GET' && route === 'models') {
     return sendJson(res, 200, {
       object: 'list',
-      data: [{ id: MODEL, object: 'model', created: Math.floor(Date.now() / 1000), owned_by: 'nvidia', permission: [] }],
+      data: [{ id: MODEL, object: 'model', created: Math.floor(Date.now() / 1000), owned_by: 'litellm', permission: [] }],
     });
   }
 
   if (req.method === 'GET' && route === 'info') {
     return sendJson(res, 200, {
-      engine: 'nvidia',
-      model: MODEL,
-      configured: Boolean(process.env.NVIDIA_API_KEY),
-      api: 'NVIDIA NIM OpenAI-compatible API',
+      engine: 'nvidia', model: MODEL, configured: Boolean(process.env.NVIDIA_API_KEY), api: 'NVIDIA NIM OpenAI-compatible API',
     });
   }
 
@@ -44,12 +41,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    return sendJson(res, 200, {
-      ok: true,
-      service: 'JARVIS AI backend',
-      model: MODEL,
-      configured: Boolean(process.env.NVIDIA_API_KEY),
-    });
+    return sendJson(res, 200, { ok: true, service: 'JARVIS AI backend', model: MODEL, configured: Boolean(process.env.NVIDIA_API_KEY) });
   }
 
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' });
@@ -75,8 +67,7 @@ export default async function handler(req, res) {
 
     const stream = isOpenJarvis ? body.stream !== false : false;
     const payload = {
-      model: MODEL,
-      messages,
+      model: MODEL, messages,
       temperature: typeof body.temperature === 'number' ? body.temperature : 0.6,
       max_tokens: typeof body.max_tokens === 'number' ? body.max_tokens : 700,
       stream,
@@ -110,7 +101,6 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
-
     const reader = upstream.body.getReader();
     const decoder = new TextDecoder();
     try {
