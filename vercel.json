@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd OpenJarvis/frontend && npm ci",
+  "buildCommand": "cd OpenJarvis/frontend && npm run build",
+  "outputDirectory": "OpenJarvis/frontend/dist",
   "functions": {
     "api/chat.js": {
       "maxDuration": 60
@@ -10,6 +13,7 @@
     { "source": "/v1/info", "destination": "/api/chat?route=info" },
     { "source": "/v1/recommended-model", "destination": "/api/chat?route=recommended-model" },
     { "source": "/health", "destination": "/api/chat?route=health" },
-    { "source": "/v1/chat/completions", "destination": "/api/chat?route=chat" }
+    { "source": "/v1/chat/completions", "destination": "/api/chat?route=chat" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
